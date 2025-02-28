@@ -17,9 +17,9 @@ function Login() {
         email,
         password,
       });
-      const { access_token } = response.data;
+      const { access_token, user_id } = response.data;
       localStorage.setItem('token', access_token);
-      setMessage("Zalogowano pomyślnie");
+      localStorage.setItem('user_id', user_id);
       navigate('/chat');
     } catch (error) {
       // Obsługa błędu 401

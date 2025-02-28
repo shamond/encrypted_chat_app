@@ -28,13 +28,13 @@ function Sidebar({ conversations = [], onSelectConversation }) {
       }}
     >
       <Typography variant="h6" sx={{ p: 2 }}>
-        Rozmowy
+        Conversations
       </Typography>
       <TextField
         fullWidth
         variant="outlined"
         size="small"
-        placeholder="Szukaj..."
+        placeholder="Search..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ p: 2 }}

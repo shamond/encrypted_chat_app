@@ -16,6 +16,7 @@ function Chat() {
   const [messages, setMessages] = useState([]);
   const [ws, setWs] = useState(null);
   const messagesEndRef = useRef(null);
+  const userId = localStorage.getItem('user_id');
 
   // Pobieranie wiadomości z backendu
   useEffect(() => {
@@ -85,7 +86,7 @@ function Chat() {
     // Przyjmujemy, że aktualny użytkownik ma user_id = 1
     const messageObject = {
       content: newMessage,
-      user_id: 1,
+      user_id: userId,
       conversation_id: selectedConversationId,
       timestamp: new Date().toISOString()
     };

@@ -6,7 +6,7 @@ import { Box, Typography, List, ListItem, ListItemAvatar, Avatar, ListItemText, 
 function FriendList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [friends, setFriends] = useState([]);
-  const userId = 1; // W praktyce pobierz ID aktualnie zalogowanego użytkownika
+  const userId = localStorage.getItem('user_id');
 
   useEffect(() => {
     axios.get(`http://localhost:8000/friends?user_id=${userId}`)
@@ -14,7 +14,7 @@ function FriendList() {
         setFriends(response.data);
       })
       .catch(error => {
-        console.error('Błąd pobierania znajomych:', error);
+        console.error('Error from getting friends', error);
       });
   }, [userId]);
 
@@ -30,7 +30,7 @@ function FriendList() {
       }}
     >
       <Typography variant="h6" sx={{ mb: 2 }}>
-            Znajomi
+            Friends
       </Typography>
       <TextField
         fullWidth
