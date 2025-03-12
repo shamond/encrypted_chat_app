@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth  # import innych routerów, jeśli są
 from app.routers import friends
 from app.routers import users
+from app.routers import conversation
+from app.routers import chat
 app = FastAPI()
 
 # Konfiguracja CORS
@@ -22,3 +24,5 @@ app.add_middleware(
 # Włączenie routera z endpointami logowania/rejestracji
 app.include_router(auth.router)
 app.include_router(friends.router)
+app.include_router(conversation.router)
+app.include_router(chat.router)

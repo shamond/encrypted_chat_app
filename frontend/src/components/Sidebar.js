@@ -1,64 +1,37 @@
 // src/components/Sidebar.js
-import React, { useState } from 'react';
-import { Box, List, ListItem, ListItemAvatar, ListItemText, Avatar, Typography, TextField } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, List, ListItem, ListItemText, Typography } from '@mui/material';
+import axios from 'axios';
 
-function Sidebar({ conversations = [], onSelectConversation }) {
-  const [searchTerm, setSearchTerm] = useState('');
+function Sidebar({ onSelectConversation }) {
+  const [conversations, setConversations] = useState([]);
+  const currentUserId = parseInt(localStorage.getItem('user_id'), 10);
 
-  // Funkcja pomocnicza do pobierania tytułu rozmowy
-  const getConversationTitle = (conv) => {
-    if (conv.groupName) return conv.groupName;
-    if (conv.name) return conv.name;
-    return conv.participants?.map(user => user.name).join(', ') || 'Brak tytułu';
+  // Funkcja pobierająca konwersacje
+  const fetchConversations = () => {
+    axios.get(`http://localhost:8000/conversations?user_id=${currentUserId}`)
+      .then(response => {
+        setConversations(response.data);
+      })
+      .catch(error => {
+        console.error('Błąd pobierania konwersacji:', error);
+      });
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    getConversationTitle(conv).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchConversations();
+    // Opcjonalnie: ustawić interwał odświeżający listę konwersacji co kilka sekund
+  }, [currentUserId]);
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: 360,
-        bgcolor: 'background.paper',
-        borderRight: '1px solid #ccc',
-        height: '100vh',
-        overflowY: 'auto'
-      }}
-    >
-      <Typography variant="h6" sx={{ p: 2 }}>
-        Conversations
-      </Typography>
-      <TextField
-        fullWidth
-        variant="outlined"
-        size="small"
-        placeholder="Search..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ p: 2 }}
-      />
+    <Box sx={{ width: 300, borderRight: '1px solid #ccc', height: '100vh', overflowY: 'auto' }}>
+      <Typography variant="h6" sx={{ p: 2 }}>Konwersacje</Typography>
       <List>
-        {filteredConversations.map(conv => (
-          <ListItem key={conv.id} button onClick={() => onSelectConversation(conv.id)}>
-            <ListItemAvatar>
-              <Avatar
-                src={
-                  conv.participants && conv.participants[0]
-                    ? conv.participants[0].avatar
-                    : conv.avatar
-                }
-                alt={getConversationTitle(conv)}
-              />
-            </ListItemAvatar>
+        {conversations.map(conv => (
+          <ListItem button key={conv.id} onClick={() => onSelectConversation(conv)}>
             <ListItemText
-              primary={getConversationTitle(conv)}
-              secondary={
-                conv.messages && conv.messages.length > 0
-                  ? conv.messages[conv.messages.length - 1].text
-                  : ''
-              }
+              primary={conv.name ? conv.name : conv.participants.map(p => p.username).join(', ')}
+              secondary={`Ostatnia aktywność: ${new Date(conv.last_updated).toLocaleString()}`}
             />
           </ListItem>
         ))}

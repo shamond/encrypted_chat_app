@@ -1,6 +1,5 @@
-// src/pages/Chat.js
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Container, Paper } from '@mui/material';
+import { Box, Container, Paper, Typography } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import ChatHeader from '../components/ChatHeader';
 import ChatMessage from '../components/ChatMessage';
@@ -9,133 +8,161 @@ import FriendList from '../components/FriendList';
 import axios from 'axios';
 
 function Chat() {
-  // Inicjalizacja rozmów jako pustej tablicy
-  const [conversations, setConversations] = useState([]);
-  // Dla uproszczenia ustawiamy wybraną rozmowę jako pierwszą (lub stałe id = 1)
-  const selectedConversationId = 1;
-  const [messages, setMessages] = useState([]);
-  const [ws, setWs] = useState(null);
-  const messagesEndRef = useRef(null);
-  const userId = localStorage.getItem('user_id');
+    const [selectedConversation, setSelectedConversation] = useState(null);
+    const [selectedFriend, setSelectedFriend] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [ws, setWs] = useState(null);
+    const [wsConnected, setWsConnected] = useState(false);
+    const messagesEndRef = useRef(null);
+    const currentUserId = parseInt(localStorage.getItem('user_id'), 10);
+    const token = localStorage.getItem('token');
 
-  // Pobieranie wiadomości z backendu
-  useEffect(() => {
-    axios.get('http://localhost:8000/chat/messages')
-      .then(response => {
-        // Filtrujemy wiadomości dla wybranej rozmowy
-        const convMessages = response.data.filter(
-          (msg) => msg.conversation_id === selectedConversationId
-        );
-        const mapped = convMessages.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          author: msg.user_id, // Możesz rozbudować, aby pobrać nazwę użytkownika
-          timestamp: new Date(msg.timestamp).toLocaleTimeString()
-        }));
-        setMessages(mapped);
-      })
-      .catch(error => {
-        console.error("Błąd pobierania wiadomości:", error);
-      });
-  }, [selectedConversationId]);
-
-  // Automatyczne scrollowanie do ostatniej wiadomości
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Inicjalizacja połączenia WebSocket
-  useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/chat/ws');
-    socket.onopen = () => {
-      console.log('WebSocket połączony');
-    };
-    socket.onmessage = (event) => {
-      try {
-        const messageData = JSON.parse(event.data);
-        if (messageData.conversation_id === selectedConversationId) {
-          setMessages(prev => [
-            ...prev,
-            {
-              id: messageData.id || Date.now(),
-              text: messageData.content,
-              author: messageData.user_id,
-              timestamp: new Date(messageData.timestamp).toLocaleTimeString()
-            }
-          ]);
+     useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-      } catch (error) {
-        console.error("Błąd parsowania wiadomości z WebSocket:", error);
-      }
-    };
-    socket.onerror = (error) => {
-      console.error("Błąd WebSocket:", error);
-    };
-    socket.onclose = () => {
-      console.log('WebSocket zamknięty');
+    }, [messages]);
+
+    useEffect(() => {
+        if (!token) {
+            console.error("Brak tokena, nie otwieram WebSocket!");
+            return;
+        }
+
+        if (ws) {
+            console.log("WebSocket już istnieje, nie tworzymy nowego.");
+            return;
+        }
+
+        let socket = new WebSocket(`ws://localhost:8000/chat/ws?token=${token}`);
+
+        socket.onopen = () => {
+            console.log('WebSocket połączony');
+            setWs(socket);
+            setWsConnected(true);
+
+            if (selectedConversation?.id) {
+                socket.send(JSON.stringify({
+                    type: "join",
+                    conversation_id: selectedConversation.id
+                }));
+            }
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Otrzymano wiadomość WebSocket:", data);
+
+                if (data.type === "history") {
+                    setMessages(data.messages.map((m) => ({
+                        id: m.id,
+                        text: m.text,
+                        author: m.user_id,
+                        timestamp: new Date(m.timestamp).toLocaleTimeString(),
+                    })));
+                } else if (data.type === "message") {
+                    setMessages(prevMessages => [
+                        ...prevMessages,
+                        {
+                            id: data.id,
+                            text: data.text,
+                            author: data.user_id,
+                            timestamp: new Date(data.timestamp).toLocaleTimeString(),
+                        }
+                    ]);
+                }
+            } catch (error) {
+                console.error("Błąd parsowania wiadomości z WebSocket:", error);
+            }
+        };
+
+        socket.onclose = (event) => {
+            console.log("WebSocket zamknięty", event);
+            setWsConnected(false);
+        };
+
+        return () => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+        };
+    }, [token]);
+
+    const handleSelectFriend = (friend) => {
+        setSelectedFriend(friend);
+        setSelectedConversation(null);
+        setMessages([]);
+
+        axios.get(`http://localhost:8000/conversations/private`, {
+            params: { user1: currentUserId, user2: friend.id }
+        })
+        .then(response => {
+            if (response.data && response.data.id) {
+                setSelectedConversation(response.data);
+                if (ws && wsConnected) {
+                    ws.send(JSON.stringify({
+                        type: "join",
+                        conversation_id: response.data.id
+                    }));
+                }
+            }
+        })
+        .catch(error => console.error("Błąd pobierania konwersacji:", error));
     };
 
-    setWs(socket);
-    return () => {
-      socket.close();
+    const handleSendMessage = (newMessage) => {
+        if (!selectedConversation) return;
+        if (ws && wsConnected) {
+            ws.send(JSON.stringify({
+                type: "message",
+                text: newMessage,
+                conversation_id: selectedConversation.id,
+                timestamp: new Date().toISOString()
+            }));
+        } else {
+            axios.post(`http://localhost:8000/chat/messages`, {
+                user_id: currentUserId,
+                conversation_id: selectedConversation.id,
+                content: newMessage,
+                timestamp: new Date().toISOString()
+            })
+            .then(response => {
+                setMessages(prev => [
+                    ...prev,
+                    { id: Date.now(), text: newMessage, author: currentUserId, timestamp: new Date().toLocaleTimeString() }
+                ]);
+            })
+            .catch(error => console.error("Błąd wysyłania wiadomości:", error));
+        }
     };
-  }, [selectedConversationId]);
 
-  // Funkcja wysyłająca wiadomość przez WebSocket
-  const handleSendMessage = (newMessage) => {
-    // Przyjmujemy, że aktualny użytkownik ma user_id = 1
-    const messageObject = {
-      content: newMessage,
-      user_id: userId,
-      conversation_id: selectedConversationId,
-      timestamp: new Date().toISOString()
-    };
-
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(messageObject));
-    } else {
-      console.error("WebSocket nie jest połączony");
-    }
-
-    // Aktualizacja lokalnego stanu dla natychmiastowego feedbacku
-    setMessages(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        text: newMessage,
-        author: 1,
-        timestamp: new Date().toLocaleTimeString()
-      }
-    ]);
-  };
-
-  return (
-    <Box sx={{ display: 'flex' }}>
-      {/* Przekazujemy conversations jako prop, zabezpieczając się przed undefined */}
-      <Sidebar conversations={conversations || []} onSelectConversation={() => {}} />
-      <Container maxWidth="md" sx={{ display: 'flex', flexDirection: 'column', height: '100vh', p: 0 }}>
-        <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <ChatHeader conversation={{ id: selectedConversationId, groupName: 'Projekt Zespołowy' }} />
-          <Box sx={{ flex: 1, overflowY: 'auto', p: 2, background: '#fafafa' }}>
-            {messages.map(msg => (
-              <ChatMessage
-                key={msg.id}
-                id={msg.id}
-                text={msg.text}
-                author={msg.author}
-                timestamp={msg.timestamp}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </Box>
-          <Box sx={{ p: 2 }}>
-            <ChatInput onSend={handleSendMessage} />
-          </Box>
-        </Paper>
-      </Container>
-      <FriendList> </FriendList>
-    </Box>
-  );
+    return (
+        <Box sx={{ display: 'flex', height: '100vh' }}>
+            <Sidebar onSelectConversation={(conv) => setSelectedConversation(conv)} />
+            <Container maxWidth="md" sx={{ display: 'flex', flexDirection: 'column', flex: 1, p: 0 }}>
+                {selectedConversation ? (
+                    <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <ChatHeader conversation={selectedConversation} wsStatus={wsConnected ? "Połączony" : "Rozłączony"} />
+                        <Box sx={{ flex: 1, overflowY: 'auto', p: 2, background: '#fafafa' }}>
+                            {messages.map(msg => (
+                                <ChatMessage key={msg.id} id={msg.id} text={msg.text} author={msg.author} timestamp={msg.timestamp} />
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </Box>
+                        <Box sx={{ p: 2 }}>
+                            <ChatInput onSend={handleSendMessage} disabled={!selectedConversation} />
+                        </Box>
+                    </Paper>
+                ) : (
+                    <Paper sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography variant="h6">Wybierz konwersację</Typography>
+                    </Paper>
+                )}
+            </Container>
+            <FriendList onSelectFriend={handleSelectFriend} />
+        </Box>
+    );
 }
 
 export default Chat;

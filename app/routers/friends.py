@@ -14,7 +14,7 @@ class Friend(BaseModel):
     avatar: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Model wejściowy przy dodawaniu przyjaciela
 class FriendInput(BaseModel):
@@ -61,7 +61,7 @@ class UserSearch(BaseModel):
     avatar: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.get("/search", response_model=List[UserSearch])
 async def search_users(

@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, T
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base import Base
+from sqlalchemy.sql import func
 
 # Tabela asocjacyjna dla znajomych (relacja wiele-do-wielu między użytkownikami)
 friendship_table = Table(
@@ -55,6 +56,7 @@ class Conversation(Base):
     name = Column(String, nullable=True)  # Nazwa czatu grupowego; dla rozmów jeden-na-jeden może być None
     is_group = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Uczestnicy rozmowy
     participants = relationship(

@@ -3,20 +3,24 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Box, Typography, List, ListItem, ListItemAvatar, Avatar, ListItemText, Divider, TextField } from '@mui/material';
 
-function FriendList() {
+function FriendList({ onSelectFriend }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [friends, setFriends] = useState([]);
-  const userId = localStorage.getItem('user_id');
+  const currentUserId = parseInt(localStorage.getItem('user_id'), 10);
 
   useEffect(() => {
-    axios.get(`http://localhost:8000/friends?user_id=${userId}`)
+    axios.get(`http://localhost:8000/friends?user_id=${currentUserId}`)
       .then(response => {
         setFriends(response.data);
       })
       .catch(error => {
         console.error('Error from getting friends', error);
       });
-  }, [userId]);
+  }, [currentUserId]);
+
+  const filteredFriends = friends.filter(friend =>
+    friend.username.toLowerCase().includes(searchTerm.toLowerCase()) && friend.id !== currentUserId
+  );
 
   return (
     <Box
@@ -30,7 +34,7 @@ function FriendList() {
       }}
     >
       <Typography variant="h6" sx={{ mb: 2 }}>
-            Friends
+        Twoi Znajomi
       </Typography>
       <TextField
         fullWidth
@@ -42,15 +46,15 @@ function FriendList() {
         sx={{ p: 2 }}
       />
       <List>
-        {friends.map(friend => (
+        {filteredFriends.map(friend => (
           <React.Fragment key={friend.id}>
-            <ListItem>
+            <ListItem button onClick={() => onSelectFriend(friend)}>
               <ListItemAvatar>
                 <Avatar src={friend.avatar} alt={friend.username}>
                   {friend.username.charAt(0)}
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={friend.username} />
+              <ListItemText primary={friend.username} secondary={friend.online ? "Online" : "Offline"} />
             </ListItem>
             <Divider component="li" />
           </React.Fragment>

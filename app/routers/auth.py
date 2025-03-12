@@ -120,3 +120,22 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Nieprawidłowy email lub hasło")
     access_token = create_access_token(data={"sub": user.email}, expires_delta=timedelta(hours=1))
     return {"access_token": access_token, "user_id": user.id, "token_type": "bearer"}
+
+def decode_access_token(token: str):
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm]
+        )
+        return payload
+
+    except jwt.ExpiredSignatureError:
+        # Token jest przedawniony
+        raise HTTPException(status_code=401, detail="Token wygasł")
+
+    except jwt.InvalidTokenError:
+        # Ogólna kategoria – nieważny token (zła sygnatura, zły format, itp.)
+        raise HTTPException(status_code=403, detail="Nieprawidłowy token")
+
+
