@@ -1,82 +1,109 @@
-# encrypted_chat_app
-[this project isn't complete right now]
-hi, if you are here. you're interesing my profile to my future recutier
+Encrypted Chat App
 
-Stack:
-1.JavaScript
-2.Python
-3.reactJS
-4.FastAPI
-5.websocket
-6.cryptography
+[This project is still in development]
 
-project requirements:
-[frontend]
-1.login panel - page
-2.create account - page
-3.chat - MAIN page
-3a.compontnets
--chatHeader with buttons (add friend, live stream, settings)
--chatMessage - display your and your strange friend messages
--sidebar display your conversation
--friendList - display your friends
-4.addFriends- page and searching from database
-5.add group chat- you can invite participate
-[backend]
-structure
--app
-  -core
-    --config.py loads data from env file
-    --security.py creating token to session and verifing token 
--db 
-    --base.py
-    --session.py 
--routers [endpoints]
-    --auth.py 
-    1.hash password
-    2.verify password
-    3. creating access token
-    4. decode access token
-    5. getting db from session
-    6. model data to login && registration && token
-    7. creating access token
-    --chat.py
-    1. implements ConnectionManager (connecting and broadcasting messages)
-    2. implements message model
-    3. endpoint to post messages & save in db
-    4. endpoint to websocket
-    --conversation.py
-    
-    --friends.py
-    --groups.py
-    --users.py
--models.py
+Introduction
 
+Welcome! If you're reading this, you're probably interested in my profile as a potential recruiter. This project is an encrypted chat application designed to provide secure communication.
 
+Tech Stack
 
+JavaScript
 
+Python
 
+ReactJS
 
+FastAPI
 
+WebSocket
 
-TODO in future:
-posibillity to talking on live stream
-cipher stream
-cipheres text message
-group messaging support
-[backend]
-1.
+Cryptography
 
+Project Features
 
+Frontend
 
+Login Page
 
-4.add friends -
-3.information about users in database
-4.hashing passwords to store database
-5.
+Create Account Page
 
-use project
+Main Chat Page
 
+Chat Header: Includes buttons for adding friends, live streaming, and settings.
 
+Chat Messages: Displays messages between users.
 
+Sidebar: Shows your active conversations.
 
+Friend List: Displays a list of your friends.
+
+Add Friends Page: Search and add friends from the database.
+
+Group Chat Support: Invite participants to group conversations.
+
+Backend
+
+Structure
+
+app/
+  core/
+    config.py       # Loads environment variables
+    security.py     # Creates and verifies session tokens
+  db/
+    base.py         # Base database setup
+    session.py      # Database session handling
+  routers/         # API Endpoints
+    auth.py         # Authentication
+    chat.py         # Chat functionality
+    conversation.py # Conversations management
+    friends.py      # Friend search and management
+    groups.py       # Group chat management
+    users.py        # User management
+  models.py         # Database models
+
+API Endpoints
+
+Authentication (auth.py)
+
+Hashes and verifies passwords
+
+Creates and decodes access tokens
+
+Handles user login and registration
+
+Chat (chat.py)
+
+Implements ConnectionManager for WebSocket connections
+
+Defines the message model
+
+Endpoints for sending and storing messages
+
+Conversations (conversation.py)
+
+Models for participants and conversations
+
+Endpoints for retrieving and creating conversations
+
+Friends (friends.py)
+
+Search and manage friends
+
+Groups (groups.py)
+
+Group chat functionality (in progress)
+
+Users (users.py)
+
+User-related endpoints
+
+Future Plans (TODO)
+
+Live streaming support
+
+Encrypted voice/video streaming
+
+End-to-end encrypted text messaging
+
+Support for group messaging
